@@ -47,7 +47,7 @@ async function findOrCreateSession(stakeholderID, projectID) {
       const newRec = await base('interview_sessions').create({
         'Stakeholder': stakeholderID, 
         'ProjectID': projectID,
-        'Session_Status': 'In Progress'
+        'Session_status': 'In Progress'
       });
       return newRec.id;
     }
