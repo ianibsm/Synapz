@@ -75,6 +75,7 @@ async function createMessageRecord(sessionId, sender, text) {
 //////////////////////////////
 app.post('/voice-chat', async (req, res) => {
   try {
+console.log("Received body:", req.body); // Add this line
     const { stakeholderID, projectID, userMessage } = req.body;
     if (!userMessage) {
       return res.status(400).json({ error: 'No userMessage provided' });
