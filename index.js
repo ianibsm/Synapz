@@ -60,9 +60,9 @@ async function findOrCreateSession(stakeholderID, projectID) {
 async function createMessageRecord(sessionId, sender, text) {
   try {
     await base('interview_messages').create({
-      'Interview Session': [sessionId],
+      'interview_session': [sessionId],
       'Sender': sender,
-      'Message Text': text
+      'Message_text': text
     });
   } catch (error) {
     console.error('Error in createMessageRecord:', error);
