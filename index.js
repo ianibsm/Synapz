@@ -15,22 +15,23 @@ app.use(express.json());
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const AIRTABLE_PERSONAL_ACCESS_TOKEN = process.env.AIRTABLE_PERSONAL_ACCESS_TOKEN;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
-const PORT = process.env.PORT || 3000;
 
-// Configure OpenAI
+// Use PORT from environment or default to 8080
+const PORT = process.env.PORT || 8080;
+
+//////////////////////////////
+// Configure OpenAI and Airtable
+//////////////////////////////
 const configuration = new Configuration({
   apiKey: OPENAI_API_KEY
 });
 const openai = new OpenAIApi(configuration);
-
-// Configure Airtable
 const base = new Airtable({ apiKey: AIRTABLE_PERSONAL_ACCESS_TOKEN }).base(AIRTABLE_BASE_ID);
 
 //////////////////////////////
 // Helper Functions
 //////////////////////////////
 
-// 1) Find or create an Interview Session in "interview_sessions"
 async function findOrCreateSession(stakeholderID, projectID) {
   try {
     const records = await base('interview_sessions')
@@ -41,10 +42,8 @@ async function findOrCreateSession(stakeholderID, projectID) {
       .firstPage();
 
     if (records.length > 0) {
-      // Session already exists
       return records[0].id;
     } else {
-      // Create a new session
       const newRec = await base('interview_sessions').create({
         'Stakeholder': stakeholderID, 
         'ProjectID': projectID,
@@ -58,11 +57,10 @@ async function findOrCreateSession(stakeholderID, projectID) {
   }
 }
 
-// 2) Create a record in "interview_messages"
 async function createMessageRecord(sessionId, sender, text) {
   try {
     await base('interview_messages').create({
-      'Interview Session': [sessionId], // Linked field -> array
+      'Interview Session': [sessionId],
       'Sender': sender,
       'Message Text': text
     });
@@ -82,13 +80,9 @@ app.post('/voice-chat', async (req, res) => {
       return res.status(400).json({ error: 'No userMessage provided' });
     }
 
-    // 1) Find or create the interview session
     const sessionId = await findOrCreateSession(stakeholderID, projectID);
-
-    // 2) Store the user's message
     await createMessageRecord(sessionId, 'User', userMessage);
 
-    // 3) Construct the ChatGPT prompt
     const messages = [
       {
         role: 'system',
@@ -101,17 +95,13 @@ app.post('/voice-chat', async (req, res) => {
       }
     ];
 
-    // 4) Call OpenAI (non-streaming for now)
     const completion = await openai.createChatCompletion({
       model: 'gpt-3.5-turbo',
       messages
     });
     const aiResponse = completion.data.choices[0].message.content;
 
-    // 5) Store the AI response
     await createMessageRecord(sessionId, 'AI', aiResponse);
-
-    // 6) Return the AI response to the client
     return res.json({ aiResponse });
   } catch (error) {
     console.error('Error in /voice-chat:', error);
@@ -120,21 +110,7 @@ app.post('/voice-chat', async (req, res) => {
 });
 
 //////////////////////////////
-// Example /stream-chat Endpoint
-//////////////////////////////
-app.post('/stream-chat', async (req, res) => {
-  try {
-    // If you want a streaming approach, implement it here
-    // For now, it's just a placeholder
-    return res.json({ message: 'stream-chat endpoint is not fully implemented yet.' });
-  } catch (error) {
-    console.error('Error in /stream-chat:', error);
-    res.status(500).send('Server error');
-  }
-});
-
-//////////////////////////////
-// Test route to verify
+// Test route to verify server
 //////////////////////////////
 app.get('/test', (req, res) => {
   res.send("Test route is working!");
