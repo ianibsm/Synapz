@@ -97,7 +97,7 @@ console.log("Received body:", req.body); // Add this line
     ];
 
     const completion = await openai.createChatCompletion({
-      model: '01-mini',
+      model: 'gpt-4o',
       messages
     });
     const aiResponse = completion.data.choices[0].message.content;
