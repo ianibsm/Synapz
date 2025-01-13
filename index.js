@@ -97,7 +97,7 @@ console.log("Received body:", req.body); // Add this line
     ];
 
     const completion = await openai.createChatCompletion({
-      model: 'gpt-4o-realtime-preview-2021-12-17',
+      model: 'gpt-4o-realtime-preview',
       messages
     });
     const aiResponse = completion.data.choices[0].message.content;
