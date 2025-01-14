@@ -119,6 +119,17 @@ app.get('/test', (req, res) => {
   res.send("Test route is working!");
 });
 
+app.get('/model-info', async (req, res) => {
+  try {
+    const model = await openai.Model.retrieve('gpt-4o');
+    res.json({ model });
+  } catch (error) {
+    console.error('Error retrieving model info:', error);
+    res.status(500).json({ error: 'Could not retrieve model info' });
+  }
+});
+
+
 //////////////////////////////
 // Start the Express server
 //////////////////////////////
