@@ -145,14 +145,10 @@ app.get('/list-models', async (req, res) => {
 ////////
 app.post('/stream-chat', async (req, res) => {
   try {
-    const { stakeholderID, projectID, userMessage } = req.body;
+    const { userMessage } = req.body;
     if (!userMessage) return res.status(400).send('No userMessage provided');
 
-    // Find or create session and store the user message
-    const sessionId = await findOrCreateSession(stakeholderID, projectID);
-    await createMessageRecord(sessionId, 'User', userMessage);
-
-    // Configure SSE response headers for streaming
+    // Set up Server-Sent Events (SSE) headers for streaming
     res.set({
       'Cache-Control': 'no-cache',
       'Content-Type': 'text/event-stream',
@@ -160,25 +156,15 @@ app.post('/stream-chat', async (req, res) => {
     });
     res.flushHeaders();
 
-    // Call OpenAI with streaming enabled, using a known working model
     const completion = await openai.createChatCompletion({
-      model: 'gpt-4o',  // using a known working model for now
+      model: 'gpt-4o',      // using a known working model for now
       stream: true,
       messages: [
-        {
-          role: 'system',
-          content: `You are an AI that interviews stakeholders about project requirements. This session is for ProjectID: ${projectID}.`
-        },
-        {
-          role: 'user',
-          content: userMessage
-        }
+        { role: 'system', content: "You are a helpful assistant." },
+        { role: 'user', content: userMessage }
       ]
     }, { responseType: 'stream' });
 
-    let aiResponseFull = '';
-
-    // Process streaming data chunks
     completion.data.on('data', (chunk) => {
       const payloads = chunk.toString().split('\n\n');
       payloads.forEach((payload) => {
@@ -189,7 +175,6 @@ app.post('/stream-chat', async (req, res) => {
             const dataObj = JSON.parse(dataStr);
             const content = dataObj.choices?.[0]?.delta?.content;
             if (content) {
-              aiResponseFull += content;
               res.write(`data: ${content}\n\n`);
             }
           } catch (err) {
@@ -199,9 +184,7 @@ app.post('/stream-chat', async (req, res) => {
       });
     });
 
-    // When the streaming ends, save the full AI response and end the response
-    completion.data.on('end', async () => {
-      await createMessageRecord(sessionId, 'AI', aiResponseFull);
+    completion.data.on('end', () => {
       res.write('data: [STREAM_DONE]\n\n');
       res.end();
     });
@@ -216,6 +199,7 @@ app.post('/stream-chat', async (req, res) => {
     res.status(500).send('Server error');
   }
 });
+
 ///////////
 
 completion.data.on('end', async () => {
