@@ -142,6 +142,10 @@ app.get('/list-models', async (req, res) => {
   }
 });
 
+app.post('/stream-chat', (req, res) => {
+  console.log('Received POST to /stream-chat');
+  res.json({ message: 'stream-chat endpoint is working!' });
+});
 
 
 //////////////////////////////
