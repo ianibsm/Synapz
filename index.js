@@ -142,10 +142,66 @@ app.get('/list-models', async (req, res) => {
   }
 });
 
-app.post('/stream-chat', (req, res) => {
-  console.log('Received POST to /stream-chat');
-  res.json({ message: 'stream-chat endpoint is working!' });
+// ... previous code for session and message handling ...
+
+// Configure SSE response headers
+res.set({
+  'Cache-Control': 'no-cache',
+  'Content-Type': 'text/event-stream',
+  'Connection': 'keep-alive'
 });
+res.flushHeaders(); // ensure headers are sent immediately
+
+// Call OpenAI with streaming enabled and the realtime preview model
+const completion = await openai.createChatCompletion({
+  model: 'gpt-4o-realtime-preview',  // use realtime preview model
+  stream: true,                      // enable streaming
+  messages: [
+    {
+      role: 'system',
+      content: `You are an AI that interviews stakeholders about project requirements. This session is for ProjectID: ${projectID}.`
+    },
+    {
+      role: 'user',
+      content: userMessage
+    }
+  ]
+}, { responseType: 'stream' });
+
+let aiResponseFull = '';
+
+completion.data.on('data', (chunk) => {
+  const payloads = chunk.toString().split('\n\n');
+  payloads.forEach((payload) => {
+    if (payload.includes('[DONE]')) return;
+    if (payload.trim() !== '') {
+      try {
+        const dataStr = payload.replace(/^data: /, '');
+        const dataObj = JSON.parse(dataStr);
+        const content = dataObj.choices?.[0]?.delta?.content;
+        if (content) {
+          aiResponseFull += content;
+          res.write(`data: ${content}\n\n`);
+        }
+      } catch (err) {
+        console.error('Error parsing chunk:', err);
+      }
+    }
+  });
+});
+
+completion.data.on('end', async () => {
+  // Save the complete AI response in Airtable
+  await createMessageRecord(sessionId, 'AI', aiResponseFull);
+  res.write('data: [STREAM_DONE]\n\n');
+  res.end();
+});
+
+completion.data.on('error', (error) => {
+  console.error('OpenAI stream error:', error);
+  res.end();
+});
+
 
 
 //////////////////////////////
