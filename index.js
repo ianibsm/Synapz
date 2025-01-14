@@ -96,10 +96,26 @@ console.log("Received body:", req.body); // Add this line
       }
     ];
 
-    const completion = await openai.createChatCompletion({
-      model: 'gpt-4o',
-      messages
-    });
+//      const completion = await openai.createChatCompletion({
+//        model: 'gpt-4o',
+//        messages
+//      });
+
+try {
+  const completion = await openai.createChatCompletion({
+    model: 'gpt-4o-realtime-preview',
+    messages
+  });
+  console.log('OpenAI completion response:', completion.data);
+  const aiResponse = completion.data.choices[0].message.content;
+  console.log('AI Response:', aiResponse);
+  // ... rest of your code to store and return aiResponse ...
+} catch (error) {
+  console.error('Error calling OpenAI:', error.response ? error.response.data : error.message);
+  return res.status(500).json({ error: 'OpenAI API error' });
+}
+
+    
     const aiResponse = completion.data.choices[0].message.content;
 
     await createMessageRecord(sessionId, 'AI', aiResponse);
