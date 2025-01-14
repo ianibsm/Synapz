@@ -143,20 +143,79 @@ app.get('/list-models', async (req, res) => {
 });
 
 ////////
-const completion = await openai.createChatCompletion({
-  model: 'gpt-4o',  // use a known working model
-  stream: true,
-  messages: [
-    {
-      role: 'system',
-      content: `You are an AI that interviews stakeholders...`
-    },
-    {
-      role: 'user',
-      content: userMessage
-    }
-  ]
-}, { responseType: 'stream' });
+app.post('/stream-chat', async (req, res) => {
+  try {
+    const { stakeholderID, projectID, userMessage } = req.body;
+    if (!userMessage) return res.status(400).send('No userMessage provided');
+
+    // Find or create session and store the user message
+    const sessionId = await findOrCreateSession(stakeholderID, projectID);
+    await createMessageRecord(sessionId, 'User', userMessage);
+
+    // Configure SSE response headers for streaming
+    res.set({
+      'Cache-Control': 'no-cache',
+      'Content-Type': 'text/event-stream',
+      'Connection': 'keep-alive'
+    });
+    res.flushHeaders();
+
+    // Call OpenAI with streaming enabled, using a known working model
+    const completion = await openai.createChatCompletion({
+      model: 'gpt-4o',  // using a known working model for now
+      stream: true,
+      messages: [
+        {
+          role: 'system',
+          content: `You are an AI that interviews stakeholders about project requirements. This session is for ProjectID: ${projectID}.`
+        },
+        {
+          role: 'user',
+          content: userMessage
+        }
+      ]
+    }, { responseType: 'stream' });
+
+    let aiResponseFull = '';
+
+    // Process streaming data chunks
+    completion.data.on('data', (chunk) => {
+      const payloads = chunk.toString().split('\n\n');
+      payloads.forEach((payload) => {
+        if (payload.includes('[DONE]')) return;
+        if (payload.trim() !== '') {
+          try {
+            const dataStr = payload.replace(/^data: /, '');
+            const dataObj = JSON.parse(dataStr);
+            const content = dataObj.choices?.[0]?.delta?.content;
+            if (content) {
+              aiResponseFull += content;
+              res.write(`data: ${content}\n\n`);
+            }
+          } catch (err) {
+            console.error('Error parsing chunk:', err);
+          }
+        }
+      });
+    });
+
+    // When the streaming ends, save the full AI response and end the response
+    completion.data.on('end', async () => {
+      await createMessageRecord(sessionId, 'AI', aiResponseFull);
+      res.write('data: [STREAM_DONE]\n\n');
+      res.end();
+    });
+
+    completion.data.on('error', (error) => {
+      console.error('OpenAI stream error:', error);
+      res.end();
+    });
+
+  } catch (error) {
+    console.error('Error in /stream-chat:', error);
+    res.status(500).send('Server error');
+  }
+});
 ///////////
 
 completion.data.on('end', async () => {
