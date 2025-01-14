@@ -122,7 +122,7 @@ app.get('/test', (req, res) => {
 app.get('/model-info', async (req, res) => {
   try {
     // Use the correct method to retrieve model information
-    const modelResponse = await openai.retrieveModel('gpt-4o');
+    const modelResponse = await openai.retrieveModel('gpt-4o-realtime-preview');
     console.log('Retrieved model data:', modelResponse.data);  // Log for debugging
     res.json({ model: modelResponse.data });
   } catch (error) {
