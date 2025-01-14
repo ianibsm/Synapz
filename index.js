@@ -121,13 +121,16 @@ app.get('/test', (req, res) => {
 
 app.get('/model-info', async (req, res) => {
   try {
-    const model = await openai.Model.retrieve('gpt-4o');
-    res.json({ model });
+    // Use the correct method to retrieve model information
+    const modelResponse = await openai.retrieveModel('gpt-4o');
+    console.log('Retrieved model data:', modelResponse.data);  // Log for debugging
+    res.json({ model: modelResponse.data });
   } catch (error) {
-    console.error('Error retrieving model info:', error);
+    console.error('Error retrieving model info:', error.response ? error.response.data : error.message);
     res.status(500).json({ error: 'Could not retrieve model info' });
   }
 });
+
 
 
 //////////////////////////////
