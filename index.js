@@ -47,7 +47,7 @@ async function findOrCreateSession(stakeholderID, projectID) {
       const newRec = await base('interview_sessions').create({
         'Stakeholder': stakeholderID, 
         'ProjectID': projectID,
-        'Session_status': 'In Progress'
+        'Session_Status': 'In Progress' // Ensure field name matches your table definition
       });
       return newRec.id;
     }
@@ -60,9 +60,9 @@ async function findOrCreateSession(stakeholderID, projectID) {
 async function createMessageRecord(sessionId, sender, text) {
   try {
     await base('interview_messages').create({
-      'interview_session': [sessionId],
+      'Interview Session': [sessionId], // Ensure field name matches your table definition
       'Sender': sender,
-      'Message_text': text
+      'Message Text': text
     });
   } catch (error) {
     console.error('Error in createMessageRecord:', error);
@@ -75,7 +75,7 @@ async function createMessageRecord(sessionId, sender, text) {
 //////////////////////////////
 app.post('/voice-chat', async (req, res) => {
   try {
-console.log("Received body:", req.body); // Add this line
+    console.log("Received body:", req.body);
     const { stakeholderID, projectID, userMessage } = req.body;
     if (!userMessage) {
       return res.status(400).json({ error: 'No userMessage provided' });
@@ -96,13 +96,11 @@ console.log("Received body:", req.body); // Add this line
       }
     ];
 
-      const completion = await openai.createChatCompletion({
-        model: 'gpt-4o-realtime-preview',
-        stream: true,
-        messages
-      });
-
-    
+    // For non-streaming call with realtime-preview model as an example:
+    const completion = await openai.createChatCompletion({
+      model: 'gpt-4o-realtime-preview',
+      messages
+    });
     const aiResponse = completion.data.choices[0].message.content;
 
     await createMessageRecord(sessionId, 'AI', aiResponse);
@@ -122,9 +120,8 @@ app.get('/test', (req, res) => {
 
 app.get('/model-info', async (req, res) => {
   try {
-    // Use the correct method to retrieve model information
     const modelResponse = await openai.retrieveModel('gpt-4o-realtime-preview');
-    console.log('Retrieved model data:', modelResponse.data);  // Log for debugging
+    console.log('Retrieved model data:', modelResponse.data);
     res.json({ model: modelResponse.data });
   } catch (error) {
     console.error('Error retrieving model info:', error.response ? error.response.data : error.message);
@@ -142,13 +139,14 @@ app.get('/list-models', async (req, res) => {
   }
 });
 
-////////
+//////////////////////////////
+// The /stream-chat Endpoint
+//////////////////////////////
 app.post('/stream-chat', async (req, res) => {
   try {
     const { userMessage } = req.body;
     if (!userMessage) return res.status(400).send('No userMessage provided');
 
-    // Set up Server-Sent Events (SSE) headers for streaming
     res.set({
       'Cache-Control': 'no-cache',
       'Content-Type': 'text/event-stream',
@@ -157,7 +155,7 @@ app.post('/stream-chat', async (req, res) => {
     res.flushHeaders();
 
     const completion = await openai.createChatCompletion({
-      model: 'gpt-4o',      // using a known working model for now
+      model: 'gpt-4o', 
       stream: true,
       messages: [
         { role: 'system', content: "You are a helpful assistant." },
@@ -199,22 +197,6 @@ app.post('/stream-chat', async (req, res) => {
     res.status(500).send('Server error');
   }
 });
-
-///////////
-
-completion.data.on('end', async () => {
-  // Save the complete AI response in Airtable
-  await createMessageRecord(sessionId, 'AI', aiResponseFull);
-  res.write('data: [STREAM_DONE]\n\n');
-  res.end();
-});
-
-completion.data.on('error', (error) => {
-  console.error('OpenAI stream error:', error);
-  res.end();
-});
-
-
 
 //////////////////////////////
 // Start the Express server
