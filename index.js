@@ -155,7 +155,7 @@ app.post('/stream-chat', async (req, res) => {
     res.flushHeaders();
 
     const completion = await openai.createChatCompletion({
-      model: 'gpt-4o', 
+      model: 'gpt-4o-realtime-preview', 
       stream: true,
       messages: [
         { role: 'system', content: "You are a helpful assistant." },
