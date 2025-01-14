@@ -131,6 +131,16 @@ app.get('/model-info', async (req, res) => {
   }
 });
 
+app.get('/list-models', async (req, res) => {
+  try {
+    const modelsResponse = await openai.listModels();
+    res.json(modelsResponse.data);
+  } catch (error) {
+    console.error('Error listing models:', error);
+    res.status(500).json({ error: 'Could not list models' });
+  }
+});
+
 
 
 //////////////////////////////
