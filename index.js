@@ -201,6 +201,33 @@ app.post('/stream-chat', async (req, res) => {
     res.status(500).send('Server error');
   }
 });
+app.post('/tts', async (req, res) => {
+  try {
+    const { text, voice } = req.body;
+    if (!text) return res.status(400).json({ error: "No text provided" });
+
+    const ttsResponse = await fetch("https://api.openai.com/v1/text-to-speech", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
+      },
+      body: JSON.stringify({ text, voice: voice || "en-US" })
+    });
+
+    if (!ttsResponse.ok) {
+      console.error("TTS API response error:", ttsResponse.status, ttsResponse.statusText);
+      return res.status(ttsResponse.status).send("TTS API error");
+    }
+
+    const audioData = await ttsResponse.arrayBuffer();
+    res.set({ "Content-Type": "audio/mpeg" });
+    res.send(Buffer.from(audioData));
+  } catch (error) {
+    console.error("Error in /tts endpoint:", error);
+    res.status(500).send("Server error in TTS");
+  }
+});
 
 
 //////////////////////////////
