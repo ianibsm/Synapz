@@ -54,11 +54,13 @@ async function findOrCreateSession(stakeholderID, projectID) {
 
 async function createMessageRecord(sessionId, sender, text) {
   try {
-    await base('interview_messages').create({
+    console.log(`Creating message record: Session=${sessionId}, Sender=${sender}, Text=${text}`);
+    const record = await base('interview_messages').create({
       'interview_session': [sessionId],
       'Sender': sender,
       'Message_text': text
     });
+    console.log(`Message record created: ${record.id}`);
   } catch (error) {
     console.error('Error in createMessageRecord:', error);
     throw error;
