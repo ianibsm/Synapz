@@ -215,7 +215,7 @@ app.post('/tts', async (req, res) => {
       body: JSON.stringify({
         model: "tts-1",            // Use "tts-1" or "tts-1-hd" as supported
         input: text,               // Use "input" parameter instead of "text"
-        voice: voice || "nova"    // Adjust voice based on supported identifiers
+        voice: voice || "ash"    // Adjust voice based on supported identifiers
       })
     });
 
