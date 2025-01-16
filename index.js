@@ -206,21 +206,27 @@ app.post('/tts', async (req, res) => {
     const { text, voice } = req.body;
     if (!text) return res.status(400).json({ error: "No text provided" });
 
-    const ttsResponse = await fetch("https://api.openai.com/v1/audio/speech", {
+    const ttsResponse = await fetch("https://api.openai.com/v1/audio/createSpeech", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`
+        "Authorization": `Bearer ${OPENAI_API_KEY}`  // uses server-side secret key
       },
-      body: JSON.stringify({ text, voice: voice || "nova" })
+      body: JSON.stringify({
+        input: text,
+        voice: voice || "nova",        // default voice parameter
+        model: "tts-1"        // model parameter as per documentation
+      })
     });
 
+    console.log('TTS response status:', ttsResponse.status);
     if (!ttsResponse.ok) {
-      console.error("TTS API response error:", ttsResponse.status, ttsResponse.statusText);
+      console.error('TTS API response error:', ttsResponse.status, ttsResponse.statusText);
       return res.status(ttsResponse.status).send("TTS API error");
     }
 
     const audioData = await ttsResponse.arrayBuffer();
+    console.log('Received audio data length:', audioData.byteLength);
     res.set({ "Content-Type": "audio/mpeg" });
     res.send(Buffer.from(audioData));
   } catch (error) {
@@ -228,6 +234,7 @@ app.post('/tts', async (req, res) => {
     res.status(500).send("Server error in TTS");
   }
 });
+
 
 
 //////////////////////////////
