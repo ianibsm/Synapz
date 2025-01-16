@@ -6,6 +6,19 @@ const cors = require('cors');
 const { Configuration, OpenAIApi } = require('openai');
 const Airtable = require('airtable');
 
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection:', reason);
+});
+
+process.on('uncaughtException', (err) => {
+  console.error('Uncaught Exception:', err);
+});
+
+app.get('/health', (req, res) => {
+  res.send('Server is healthy');
+});
+
+
 // Initialize the Express app
 const app = express();
 app.use(cors());
