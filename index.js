@@ -207,7 +207,7 @@ app.post('/stream-chat', async (req, res) => {
 app.get('/test-airtable', async (req, res) => {
   try {
     // Use dummy data for testing record creation
-    const testSessionId = '8';  // Replace with a valid session ID if needed
+    const testSessionId = '1';  // Replace with a valid session ID if needed
     const record = await base('interview_messages').create({
       'interview_session': [testSessionId],
       'Sender': 'Test',
