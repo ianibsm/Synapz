@@ -93,17 +93,19 @@ app.post('/voice-chat', async (req, res) => {
     console.log("Received body:", req.body);
     const { stakeholderID, projectID, userMessage } = req.body;
     if (!userMessage) {
+      console.error("No userMessage provided");
       return res.status(400).json({ error: 'No userMessage provided' });
     }
 
     const sessionId = await findOrCreateSession(stakeholderID, projectID);
+    console.log("Session ID:", sessionId);
     await createMessageRecord(sessionId, 'User', userMessage);
+    console.log("User message recorded");
 
     const messages = [
       {
         role: 'system',
-        content: `You are an AI that interviews stakeholders about project requirements. 
-                  This session is for ProjectID: ${projectID}.`
+        content: `You are an AI that interviews stakeholders about project requirements. This session is for ProjectID: ${projectID}.`
       },
       {
         role: 'user',
@@ -111,20 +113,32 @@ app.post('/voice-chat', async (req, res) => {
       }
     ];
 
-    // For non-streaming call with realtime-preview model as an example:
+    // Temporarily use a known stable model
+    console.log("Calling OpenAI API with model gpt-4o...");
     const completion = await openai.createChatCompletion({
-      model: 'gpt-4o',
+      model: 'gpt-4o',  // using a stable model for testing
       messages
     });
+    console.log("OpenAI API call completed");
+
     const aiResponse = completion.data.choices[0].message.content;
+    console.log("AI response received:", aiResponse);
 
     await createMessageRecord(sessionId, 'AI', aiResponse);
+    console.log("AI message recorded");
+
     return res.json({ aiResponse });
   } catch (error) {
-    console.error('Error in /voice-chat:', error);
+    // Log detailed error information
+    if (error.response) {
+      console.error('Error response from OpenAI or Axios:', error.response.data);
+    } else {
+      console.error('Error in /voice-chat:', error.message);
+    }
     return res.status(500).json({ error: 'Server error' });
   }
 });
+
 
 //////////////////////////////
 // Test route to verify server
