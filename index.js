@@ -137,9 +137,14 @@ app.get('/list-models', async (req, res) => {
 
 app.post('/stream-chat', async (req, res) => {
   try {
-    const { userMessage } = req.body;
+    const { stakeholderID, projectID, userMessage } = req.body;
     if (!userMessage) return res.status(400).send('No userMessage provided');
 
+    // Create/find session and store user message in Airtable
+    const sessionId = await findOrCreateSession(stakeholderID, projectID);
+    await createMessageRecord(sessionId, 'User', userMessage);
+
+    // Set up Server-Sent Events (SSE) headers for streaming
     res.set({
       'Cache-Control': 'no-cache',
       'Content-Type': 'text/event-stream',
@@ -147,14 +152,17 @@ app.post('/stream-chat', async (req, res) => {
     });
     res.flushHeaders();
 
+    // Call OpenAI with streaming enabled
     const completion = await openai.createChatCompletion({
-      model: 'gpt-4o', 
+      model: 'gpt-4o',  // or another model of choice
       stream: true,
       messages: [
         { role: 'system', content: "You are a helpful assistant." },
         { role: 'user', content: userMessage }
       ]
     }, { responseType: 'stream' });
+
+    let aiResponseFull = '';
 
     completion.data.on('data', (chunk) => {
       const payloads = chunk.toString().split('\n\n');
@@ -166,6 +174,7 @@ app.post('/stream-chat', async (req, res) => {
             const dataObj = JSON.parse(dataStr);
             const content = dataObj.choices?.[0]?.delta?.content;
             if (content) {
+              aiResponseFull += content;
               res.write(`data: ${content}\n\n`);
             }
           } catch (err) {
@@ -175,7 +184,9 @@ app.post('/stream-chat', async (req, res) => {
       });
     });
 
-    completion.data.on('end', () => {
+    completion.data.on('end', async () => {
+      // Save the complete AI response to Airtable
+      await createMessageRecord(sessionId, 'AI', aiResponseFull);
       res.write('data: [STREAM_DONE]\n\n');
       res.end();
     });
@@ -190,6 +201,7 @@ app.post('/stream-chat', async (req, res) => {
     res.status(500).send('Server error');
   }
 });
+
 
 //////////////////////////////
 // Start the Express server
