@@ -98,7 +98,7 @@ app.post('/voice-chat', async (req, res) => {
 
     // For non-streaming call with realtime-preview model as an example:
     const completion = await openai.createChatCompletion({
-      model: 'gpt-4o-realtime-preview',
+      model: 'gpt-4o',
       messages
     });
     const aiResponse = completion.data.choices[0].message.content;
