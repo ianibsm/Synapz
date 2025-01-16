@@ -206,16 +206,16 @@ app.post('/tts', async (req, res) => {
     const { text, voice } = req.body;
     if (!text) return res.status(400).json({ error: "No text provided" });
 
-    const ttsResponse = await fetch("https://api.openai.com/v1/audio/createSpeech", {
+    const ttsResponse = await fetch("https://api.openai.com/v1/audio/speech", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${OPENAI_API_KEY}`  // uses server-side secret key
+        "Authorization": `Bearer ${OPENAI_API_KEY}`
       },
       body: JSON.stringify({
-        input: text,
-        voice: voice || "nova",        // default voice parameter
-        model: "tts-1"        // model parameter as per documentation
+        model: "tts-1",            // Use "tts-1" or "tts-1-hd" as supported
+        input: text,               // Use "input" parameter instead of "text"
+        voice: voice || "nova"    // Adjust voice based on supported identifiers
       })
     });
 
@@ -234,6 +234,7 @@ app.post('/tts', async (req, res) => {
     res.status(500).send("Server error in TTS");
   }
 });
+
 
 
 
