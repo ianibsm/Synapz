@@ -126,10 +126,15 @@ app.get('/model-info', async (req, res) => {
     console.log('Retrieved model data:', modelResponse.data);
     res.json({ model: modelResponse.data });
   } catch (error) {
-    console.error('Error retrieving model info:', error.response ? error.response.data : error.message);
+    if (error.response) {
+      console.error('Error retrieving model info:', error.response.data);
+    } else {
+      console.error('Error retrieving model info:', error.message);
+    }
     res.status(500).json({ error: 'Could not retrieve model info' });
   }
 });
+
 
 app.get('/list-models', async (req, res) => {
   try {
