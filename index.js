@@ -206,13 +206,13 @@ app.post('/tts', async (req, res) => {
     const { text, voice } = req.body;
     if (!text) return res.status(400).json({ error: "No text provided" });
 
-    const ttsResponse = await fetch("https://api.openai.com/v1/text-to-speech", {
+    const ttsResponse = await fetch("https://api.openai.com/v1/audio/speech", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${OPENAI_API_KEY}`
       },
-      body: JSON.stringify({ text, voice: voice || "en-US" })
+      body: JSON.stringify({ text, voice: voice || "nova" })
     });
 
     if (!ttsResponse.ok) {
