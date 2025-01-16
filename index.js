@@ -59,11 +59,13 @@ async function findOrCreateSession(stakeholderID, projectID) {
 
 async function createMessageRecord(sessionId, sender, text) {
   try {
-    await base('interview_messages').create({
-      'Interview Session': [sessionId],
+    console.log(`Creating message record: Session=${sessionId}, Sender=${sender}, Text=${text}`);
+    const record = await base('interview_messages').create({
+      'interview_session': [sessionId],  // Use lowercase and underscore as per your schema
       'Sender': sender,
-      'Message Text': text
+      'Message_text': text               // Use underscore as per your schema
     });
+    console.log(`Message record created: ${record.id}`);
   } catch (error) {
     console.error('Error in createMessageRecord:', error);
     throw error;
