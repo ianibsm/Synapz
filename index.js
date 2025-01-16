@@ -203,6 +203,25 @@ app.post('/stream-chat', async (req, res) => {
 //////////////////////////////
 // Start the Express server
 //////////////////////////////
+
+app.get('/test-airtable', async (req, res) => {
+  try {
+    // Use dummy data for testing record creation
+    const testSessionId = '8';  // Replace with a valid session ID if needed
+    const record = await base('interview_messages').create({
+      'interview_session': [testSessionId],
+      'Sender': 'Test',
+      'Message_text': 'Testing airtable record creation'
+    });
+    console.log(`Test record created: ${record.id}`);
+    res.send(`Test record created: ${record.id}`);
+  } catch (error) {
+    console.error('Error in /test-airtable:', error);
+    res.status(500).send('Test failed');
+  }
+});
+
+
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
