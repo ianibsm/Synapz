@@ -6,30 +6,13 @@ const cors = require('cors');
 const { Configuration, OpenAIApi } = require('openai');
 const Airtable = require('airtable');
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('Unhandled Rejection:', reason);
-});
-
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught Exception:', err);
-});
-
-app.get('/health', (req, res) => {
-  res.send('Server is healthy');
-});
-
-
-// Initialize the Express app
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Environment variables (Railway or local .env)
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const AIRTABLE_PERSONAL_ACCESS_TOKEN = process.env.AIRTABLE_PERSONAL_ACCESS_TOKEN;
 const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
-
-// Use PORT from environment or default to 8080
 const PORT = process.env.PORT || 8080;
 
 //////////////////////////////
@@ -44,7 +27,6 @@ const base = new Airtable({ apiKey: AIRTABLE_PERSONAL_ACCESS_TOKEN }).base(AIRTA
 //////////////////////////////
 // Helper Functions
 //////////////////////////////
-
 async function findOrCreateSession(stakeholderID, projectID) {
   try {
     const records = await base('interview_sessions')
@@ -72,13 +54,11 @@ async function findOrCreateSession(stakeholderID, projectID) {
 
 async function createMessageRecord(sessionId, sender, text) {
   try {
-    console.log(`Creating message record: Session=${sessionId}, Sender=${sender}, Text=${text}`);
-    const record = await base('interview_messages').create({
-      'interview_session': [sessionId],  // Use lowercase and underscore as per your schema
+    await base('interview_messages').create({
+      'interview_session': [sessionId],
       'Sender': sender,
-      'Message_text': text               // Use underscore as per your schema
+      'Message_text': text
     });
-    console.log(`Message record created: ${record.id}`);
   } catch (error) {
     console.error('Error in createMessageRecord:', error);
     throw error;
@@ -93,19 +73,17 @@ app.post('/voice-chat', async (req, res) => {
     console.log("Received body:", req.body);
     const { stakeholderID, projectID, userMessage } = req.body;
     if (!userMessage) {
-      console.error("No userMessage provided");
       return res.status(400).json({ error: 'No userMessage provided' });
     }
 
     const sessionId = await findOrCreateSession(stakeholderID, projectID);
-    console.log("Session ID:", sessionId);
     await createMessageRecord(sessionId, 'User', userMessage);
-    console.log("User message recorded");
 
     const messages = [
       {
         role: 'system',
-        content: `You are an AI that interviews stakeholders about project requirements. This session is for ProjectID: ${projectID}.`
+        content: `You are an AI that interviews stakeholders about project requirements. 
+                  This session is for ProjectID: ${projectID}.`
       },
       {
         role: 'user',
@@ -113,32 +91,19 @@ app.post('/voice-chat', async (req, res) => {
       }
     ];
 
-    // Temporarily use a known stable model
-    console.log("Calling OpenAI API with model gpt-4o...");
     const completion = await openai.createChatCompletion({
-      model: 'gpt-4o',  // using a stable model for testing
+      model: 'gpt-4o-realtime-preview',
       messages
     });
-    console.log("OpenAI API call completed");
-
     const aiResponse = completion.data.choices[0].message.content;
-    console.log("AI response received:", aiResponse);
 
     await createMessageRecord(sessionId, 'AI', aiResponse);
-    console.log("AI message recorded");
-
     return res.json({ aiResponse });
   } catch (error) {
-    // Log detailed error information
-    if (error.response) {
-      console.error('Error response from OpenAI or Axios:', error.response.data);
-    } else {
-      console.error('Error in /voice-chat:', error.message);
-    }
+    console.error('Error in /voice-chat:', error);
     return res.status(500).json({ error: 'Server error' });
   }
 });
-
 
 //////////////////////////////
 // Test route to verify server
@@ -149,19 +114,14 @@ app.get('/test', (req, res) => {
 
 app.get('/model-info', async (req, res) => {
   try {
-    const modelResponse = await openai.retrieveModel('gpt-4o');
+    const modelResponse = await openai.retrieveModel('gpt-4o-realtime-preview');
     console.log('Retrieved model data:', modelResponse.data);
     res.json({ model: modelResponse.data });
   } catch (error) {
-    if (error.response) {
-      console.error('Error retrieving model info:', error.response.data);
-    } else {
-      console.error('Error retrieving model info:', error.message);
-    }
+    console.error('Error retrieving model info:', error.response ? error.response.data : error.message);
     res.status(500).json({ error: 'Could not retrieve model info' });
   }
 });
-
 
 app.get('/list-models', async (req, res) => {
   try {
@@ -173,9 +133,6 @@ app.get('/list-models', async (req, res) => {
   }
 });
 
-//////////////////////////////
-// The /stream-chat Endpoint
-//////////////////////////////
 app.post('/stream-chat', async (req, res) => {
   try {
     const { userMessage } = req.body;
@@ -235,25 +192,6 @@ app.post('/stream-chat', async (req, res) => {
 //////////////////////////////
 // Start the Express server
 //////////////////////////////
-
-app.get('/test-airtable', async (req, res) => {
-  try {
-    // Use dummy data for testing record creation
-    const testSessionId = 'rec6pyjVRGBKshJto';  // Replace with a valid session ID if needed
-    const record = await base('interview_messages').create({
-      'interview_session': [testSessionId],
-      'Sender': 'Test',
-      'Message_text': 'Testing airtable record creation'
-    });
-    console.log(`Test record created: ${record.id}`);
-    res.send(`Test record created: ${record.id}`);
-  } catch (error) {
-    console.error('Error in /test-airtable:', error);
-    res.status(500).send('Test failed');
-  }
-});
-
-
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
