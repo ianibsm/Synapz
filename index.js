@@ -47,7 +47,7 @@ async function findOrCreateSession(stakeholderID, projectID) {
       const newRec = await base('interview_sessions').create({
         'Stakeholder': stakeholderID, 
         'ProjectID': projectID,
-        'Session_Status': 'In Progress' // Ensure field name matches your table definition
+        'Session_Status': 'In Progress'
       });
       return newRec.id;
     }
@@ -60,7 +60,7 @@ async function findOrCreateSession(stakeholderID, projectID) {
 async function createMessageRecord(sessionId, sender, text) {
   try {
     await base('interview_messages').create({
-      'Interview Session': [sessionId], // Ensure field name matches your table definition
+      'Interview Session': [sessionId],
       'Sender': sender,
       'Message Text': text
     });
