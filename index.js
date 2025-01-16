@@ -98,7 +98,7 @@ app.post('/voice-chat', async (req, res) => {
 
     // For non-streaming call with realtime-preview model as an example:
     const completion = await openai.createChatCompletion({
-      model: 'gpt-4o',
+      model: 'gpt-4o-realtime-preview',
       messages
     });
     const aiResponse = completion.data.choices[0].message.content;
@@ -120,7 +120,7 @@ app.get('/test', (req, res) => {
 
 app.get('/model-info', async (req, res) => {
   try {
-    const modelResponse = await openai.retrieveModel('gpt-4o');
+    const modelResponse = await openai.retrieveModel('gpt-4o-realtime-preview');
     console.log('Retrieved model data:', modelResponse.data);
     res.json({ model: modelResponse.data });
   } catch (error) {
